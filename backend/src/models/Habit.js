@@ -50,7 +50,10 @@ const Habit = {
   async create(userId, data) {
     const {
       name, description, type = 'daily', category = 'personal',
-      difficulty = 'medium', reminder_time, start_date, target_days = 30,
+      difficulty = 'medium', reminder_time,
+      // default start_date to today if frontend doesn't send it
+      start_date = new Date().toISOString().split('T')[0],
+      target_days = 30,
       color = '#6C63FF', icon, why_reason, track_time = false, bad_habit = false,
     } = data;
 
@@ -63,7 +66,7 @@ const Habit = {
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
          RETURNING *`,
         [userId, name, description, type, category, difficulty,
-         reminder_time, start_date, target_days, color, icon, why_reason,
+         reminder_time || null, start_date, target_days, color, icon, why_reason,
          track_time, bad_habit]
       );
       const habit = rows[0];

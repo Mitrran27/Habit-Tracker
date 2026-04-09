@@ -23,6 +23,60 @@ const Friend = {
     return rows;
   },
 
+  // Verify two users are actually friends (accepted) before allowing profile view
+  async areFriends(userAId, userBId) {
+    const { rows } = await query(
+      `SELECT 1 FROM friends
+       WHERE status = 'accepted'
+         AND ((user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1))`,
+      [userAId, userBId]
+    );
+    return rows.length > 0;
+  },
+
+  // Get a friend's public profile + habits + streaks
+  async getFriendProfile(friendId) {
+    const { rows: userRows } = await query(
+      `SELECT id, name, email, profile_picture, created_at FROM users WHERE id = $1`,
+      [friendId]
+    );
+    if (!userRows[0]) return null;
+
+    const { rows: habits } = await query(
+      `SELECT
+         h.id, h.name, h.icon, h.color, h.category, h.type, h.difficulty,
+         h.target_days, h.why_reason,
+         s.current_streak, s.best_streak,
+         EXISTS(
+           SELECT 1 FROM habit_logs l
+           WHERE l.habit_id = h.id AND l.date = CURRENT_DATE AND l.status = 'completed'
+         ) AS completed_today,
+         ROUND(s.current_streak::numeric / NULLIF(h.target_days,0) * 100, 1) AS progress_pct
+       FROM habits h
+       LEFT JOIN streaks s ON s.habit_id = h.id
+       WHERE h.user_id = $1 AND h.archived = false
+       ORDER BY h.created_at DESC`,
+      [friendId]
+    );
+
+    const { rows: statsRows } = await query(
+      `SELECT
+         COALESCE(MAX(s.best_streak), 0)    AS best_streak,
+         COALESCE(SUM(s.current_streak), 0) AS total_streak,
+         COUNT(DISTINCT h.id)               AS total_habits
+       FROM habits h
+       LEFT JOIN streaks s ON s.habit_id = h.id
+       WHERE h.user_id = $1 AND h.archived = false`,
+      [friendId]
+    );
+
+    return {
+      user:   userRows[0],
+      habits,
+      stats:  statsRows[0],
+    };
+  },
+
   async findRequest(userId, friendId) {
     const { rows } = await query(
       `SELECT * FROM friends

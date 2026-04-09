@@ -37,17 +37,17 @@ export const authAPI = {
 
 // ── Habits ─────────────────────────────────────────────────
 export const habitsAPI = {
-  list:       (params) => api.get('/habits', { params }),
-  get:        (id)     => api.get(`/habits/${id}`),
-  create:     (data)   => api.post('/habits', data),
-  update:     (id, data) => api.patch(`/habits/${id}`, data),
-  archive:    (id)     => api.delete(`/habits/${id}`),
-  restore:    (id)     => api.post(`/habits/${id}/restore`),
-  checkIn:    (id, data) => api.post(`/habits/${id}/checkin`, data),
-  undoCheckIn:(id)     => api.delete(`/habits/${id}/checkin`),
-  logs:       (id, params) => api.get(`/habits/${id}/logs`, { params }),
-  calendar:   (id, params) => api.get(`/habits/${id}/calendar`, { params }),
-  freeze:     (id)     => api.post(`/habits/${id}/freeze`),
+  list:        (params) => api.get('/habits', { params }),
+  get:         (id)     => api.get(`/habits/${id}`),
+  create:      (data)   => api.post('/habits', data),
+  update:      (id, data) => api.patch(`/habits/${id}`, data),
+  archive:     (id)     => api.delete(`/habits/${id}`),
+  restore:     (id)     => api.post(`/habits/${id}/restore`),
+  checkIn:     (id, data) => api.post(`/habits/${id}/checkin`, data),
+  undoCheckIn: (id)     => api.delete(`/habits/${id}/checkin`),
+  logs:        (id, params) => api.get(`/habits/${id}/logs`, { params }),
+  calendar:    (id, params) => api.get(`/habits/${id}/calendar`, { params }),
+  freeze:      (id)     => api.post(`/habits/${id}/freeze`),
 };
 
 // ── Stats ──────────────────────────────────────────────────
@@ -63,21 +63,28 @@ export const statsAPI = {
 
 // ── Journal ────────────────────────────────────────────────
 export const journalAPI = {
-  list:        (params) => api.get('/journal', { params }),
-  get:         (id)     => api.get(`/journal/${id}`),
-  create:      (data)   => api.post('/journal', data),
+  // Don't pass undefined params — causes some axios versions to fail validation
+  list:        ()         => api.get('/journal'),
+  get:         (id)       => api.get(`/journal/${id}`),
+  create:      (data)     => api.post('/journal', data),
   update:      (id, data) => api.patch(`/journal/${id}`, data),
-  delete:      (id)     => api.delete(`/journal/${id}`),
-  moodHistory: (params) => api.get('/journal/mood-history', { params }),
+  delete:      (id)       => api.delete(`/journal/${id}`),
+  moodHistory: ()         => api.get('/journal/mood-history'),
 };
 
 // ── Friends ────────────────────────────────────────────────
 export const friendsAPI = {
-  list:        () => api.get('/friends'),
-  leaderboard: () => api.get('/friends/leaderboard'),
-  sendRequest: (data) => api.post('/friends/request', data),
-  accept:      (data) => api.post('/friends/accept', data),
-  remove:      (friendId) => api.delete(`/friends/${friendId}`),
+  list:        ()           => api.get('/friends'),
+  leaderboard: ()           => api.get('/friends/leaderboard'),
+  sendRequest: (data)       => api.post('/friends/request', data),
+  accept:      (data)       => api.post('/friends/accept', data),
+  remove:      (friendId)   => api.delete(`/friends/${friendId}`),
+  // View a friend's habits & stats
+  getProfile:  (friendId)   => api.get(`/friends/${friendId}/profile`),
+  // Chat
+  getMessages: (friendId)   => api.get(`/friends/messages/${friendId}`),
+  sendMessage: (friendId, content) => api.post(`/friends/messages/${friendId}`, { content }),
+  unreadCounts: ()          => api.get('/friends/messages/unread'),
 };
 
 // ── Achievements ───────────────────────────────────────────

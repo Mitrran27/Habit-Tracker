@@ -1,13 +1,31 @@
 const Friend = require('../models/Friend');
-const User = require('../models/User');
+const User   = require('../models/User');
 const Streak = require('../models/Streak');
-const { success, created, notFound, badRequest } = require('../utils/apiResponse');
+const { success, created, notFound, badRequest, forbidden } = require('../utils/apiResponse');
 
 const friendController = {
   async index(req, res, next) {
     try {
       const friends = await Friend.findAll(req.user.id);
       return success(res, { friends });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // GET /api/friends/:friendId/profile
+  // View a friend's public habits & stats — only allowed if you are friends
+  async profile(req, res, next) {
+    try {
+      const friendId = +req.params.friendId;
+
+      const ok = await Friend.areFriends(req.user.id, friendId);
+      if (!ok) return forbidden(res, 'You are not friends with this user');
+
+      const profile = await Friend.getFriendProfile(friendId);
+      if (!profile) return notFound(res, 'User');
+
+      return success(res, profile);
     } catch (err) {
       next(err);
     }

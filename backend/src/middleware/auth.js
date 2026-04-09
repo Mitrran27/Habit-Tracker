@@ -1,5 +1,6 @@
 const { verify } = require('../config/jwt');
 const { unauthorized } = require('../utils/apiResponse');
+const User = require('../models/User');
 
 const auth = (req, res, next) => {
   const header = req.headers.authorization;
@@ -8,6 +9,8 @@ const auth = (req, res, next) => {
   }
   try {
     req.user = verify(header.split(' ')[1]);
+    // Update last_seen asynchronously — don't block the request
+    User.touchLastSeen(req.user.id).catch(() => {});
     next();
   } catch {
     return unauthorized(res, 'Invalid or expired token');

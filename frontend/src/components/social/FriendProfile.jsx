@@ -17,6 +17,7 @@ export default function FriendProfile({ friend, onBack, onChat }) {
   const completed = profile?.habits?.filter((h) => h.completed_today).length ?? 0;
   const total     = profile?.habits?.length ?? 0;
   const todayPct  = pct(completed, total);
+  const isOnline  = profile?.user?.is_online ?? friend?.is_online ?? 0;
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: 32 }}>
@@ -45,21 +46,41 @@ export default function FriendProfile({ friend, onBack, onChat }) {
         <div style={{ padding: '0 20px' }}>
           {/* Hero */}
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
-            <div style={{
-              width: 72, height: 72, borderRadius: '50%', margin: '0 auto 12px',
-              background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 30, fontWeight: 700, color: 'white',
-            }}>
-              {friend.name?.charAt(0).toUpperCase()}
+            {/* Avatar with online dot */}
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: 12 }}>
+              <div style={{
+                width: 76, height: 76, borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 32, fontWeight: 700, color: 'white',
+              }}>
+                {friend.name?.charAt(0).toUpperCase()}
+              </div>
+              {isOnline ? (
+                <div style={{
+                  position: 'absolute', bottom: 2, right: 2,
+                  width: 14, height: 14, borderRadius: '50%',
+                  background: '#43D9A2', border: '2.5px solid var(--bg)',
+                }} />
+              ) : null}
             </div>
+
             <div style={{ fontSize: 20, fontWeight: 800 }}>{profile.user.name}</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
-              Member since {new Date(profile.user.created_at).toLocaleDateString('en-MY', { month: 'short', year: 'numeric' })}
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6 }}>
+              {isOnline ? (
+                <span style={{ color: '#43D9A2', fontSize: 13, fontWeight: 600 }}>● Online</span>
+              ) : (
+                <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>● Offline</span>
+              )}
+              <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>·</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                Since {new Date(profile.user.created_at).toLocaleDateString('en-MY', { month: 'short', year: 'numeric' })}
+              </span>
             </div>
           </div>
 
-          {/* Today's progress */}
+          {/* Today's progress ring */}
           <div className="card" style={{ padding: 20, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 20 }}>
             <CircleProgress value={todayPct} size={80} stroke={7} color={todayPct === 100 ? '#43D9A2' : '#6C63FF'}>
               <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-mono)', color: todayPct === 100 ? '#43D9A2' : 'var(--text)' }}>
@@ -78,9 +99,9 @@ export default function FriendProfile({ friend, onBack, onChat }) {
           {/* Stats row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
             {[
-              { label: 'Habits',      value: profile.stats.total_habits,  icon: '📋', color: 'var(--primary)' },
-              { label: 'Best Streak', value: `${profile.stats.best_streak}d`, icon: '🏆', color: 'var(--gold)' },
-              { label: 'Total Streak',value: `${profile.stats.total_streak}d`, icon: '🔥', color: 'var(--warning)' },
+              { label: 'Habits',       value: profile.stats.total_habits,       icon: '📋', color: 'var(--primary)' },
+              { label: 'Best Streak',  value: `${profile.stats.best_streak}d`,  icon: '🏆', color: 'var(--gold)' },
+              { label: 'Total Streak', value: `${profile.stats.total_streak}d`, icon: '🔥', color: 'var(--warning)' },
             ].map((s) => (
               <div key={s.label} className="card" style={{ padding: '12px 8px', textAlign: 'center' }}>
                 <div style={{ fontSize: 20 }}>{s.icon}</div>
@@ -97,8 +118,7 @@ export default function FriendProfile({ friend, onBack, onChat }) {
                 Their Habits
               </div>
               {profile.habits.map((h) => {
-                const cat  = getCategoryConfig(h.category);
-                const diff = getDifficultyConfig(h.difficulty);
+                const diff     = getDifficultyConfig(h.difficulty);
                 const progress = pct(h.current_streak, h.target_days);
                 return (
                   <div key={`fh-${h.id}`} className="card" style={{ padding: 14, marginBottom: 10 }}>
@@ -108,10 +128,10 @@ export default function FriendProfile({ friend, onBack, onChat }) {
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                          <span style={{ fontWeight: 600, fontSize: 14, color: h.completed_today ? 'var(--text-muted)' : 'var(--text)', textDecoration: h.completed_today ? 'line-through' : 'none' }}>
+                          <span style={{ fontWeight: 600, fontSize: 14, color: h.completed_today ? 'var(--text-muted)' : 'var(--text)', textDecoration: h.completed_today ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {h.name}
                           </span>
-                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 99, background: diff.bg, color: diff.color }}>
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 99, background: diff.bg, color: diff.color, flexShrink: 0 }}>
                             {diff.label}
                           </span>
                         </div>

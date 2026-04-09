@@ -12,12 +12,13 @@ import StatsPage     from './pages/StatsPage';
 import JournalPage   from './pages/JournalPage';
 import SettingsPage  from './pages/SettingsPage';
 import SocialPage    from './pages/SocialPage';
+import ChatPage      from './pages/ChatPage';
 
-import HabitDetail from './components/habits/HabitDetail';
-import HabitForm   from './components/habits/HabitForm';
+import HabitDetail   from './components/habits/HabitDetail';
+import HabitForm     from './components/habits/HabitForm';
 import ToastProvider from './components/common/Toast';
 
-// ── Tab bar ───────────────────────────────────────────────────
+// ── Tab bar config ────────────────────────────────────────────
 const TABS = [
   { id: 'home',    icon: '🏠', label: 'Home'    },
   { id: 'habits',  icon: '✅', label: 'Habits'  },
@@ -33,6 +34,8 @@ function AppShell() {
   const [showForm,      setShowForm]      = useState(false);
   const [editHabit,     setEditHabit]     = useState(null);
   const [showSettings,  setShowSettings]  = useState(false);
+  // Chat is lifted here so it can render as a true full-screen fixed overlay
+  const [chatFriend,    setChatFriend]    = useState(null);
 
   const { fetchHabits, createHabit, updateHabit, archiveHabit, checkIn, undoCheckIn } = useHabitStore();
 
@@ -73,25 +76,31 @@ function AppShell() {
     switch (tab) {
       case 'stats':   return <StatsPage />;
       case 'journal': return <JournalPage />;
-      case 'social':  return <SocialPage />;
+      // Pass openChat down so SocialPage can trigger a chat overlay
+      case 'social':  return <SocialPage onOpenChat={(friend) => setChatFriend(friend)} />;
       case 'habits':  return <HabitsPage onHabitPress={setSelectedHabit} onAddHabit={openAdd} />;
       default:        return <DashboardPage onHabitPress={setSelectedHabit} onAddHabit={openAdd} />;
     }
   };
 
-  // SocialPage manages its own full-screen sub-views (chat, friend profile)
-  // so we must not show the tab bar while those are active.
-  // SocialPage handles that internally by rendering full-screen overlays.
+  const isOverlayOpen = !!selectedHabit || !!chatFriend;
 
   return (
     <div className="app-shell">
       <ToastProvider />
 
+      {/* Main page — always rendered underneath */}
+      {!selectedHabit && renderPage()}
+
       {/* Habit detail overlay */}
       {selectedHabit && !showForm && (
         <div
           className="fade-in"
-          style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'var(--bg)', overflowY: 'auto', paddingBottom: 88 }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 50,
+            background: 'var(--bg)', overflowY: 'auto',
+            paddingBottom: 88, maxWidth: 430, margin: '0 auto',
+          }}
         >
           <HabitDetail
             habit={selectedHabit}
@@ -103,8 +112,23 @@ function AppShell() {
         </div>
       )}
 
-      {/* Main page */}
-      {!selectedHabit && renderPage()}
+      {/* ── Chat overlay — fixed, full-screen, breaks out of all containers ── */}
+      {chatFriend && (
+        <div
+          className="fade-in"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            maxWidth: 430, margin: '0 auto',
+            background: 'var(--bg)',
+            display: 'flex', flexDirection: 'column',
+          }}
+        >
+          <ChatPage
+            friend={chatFriend}
+            onBack={() => setChatFriend(null)}
+          />
+        </div>
+      )}
 
       {/* Habit form modal */}
       {showForm && (
@@ -119,13 +143,13 @@ function AppShell() {
         </div>
       )}
 
-      {/* Tab bar — hidden when viewing a habit detail, form open, or settings */}
-      {!selectedHabit && !showForm && !showSettings && (
+      {/* Tab bar — hidden when an overlay is covering the screen */}
+      {!isOverlayOpen && !showForm && !showSettings && (
         <nav className="tab-bar">
           {TABS.map((t) => (
             <button
               key={t.id}
-              className={`tab-btn ${tab === t.id && !showSettings ? 'active' : ''}`}
+              className={`tab-btn ${tab === t.id ? 'active' : ''}`}
               onClick={() => switchTab(t.id)}
             >
               <span className="tab-icon">{t.icon}</span>

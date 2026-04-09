@@ -1,5 +1,11 @@
 const { query } = require('../config/db');
 
+// A user is "online" if last_seen within the last 2 minutes
+const ONLINE_SQL = `CASE
+  WHEN u.last_seen > NOW() - INTERVAL '120 seconds' THEN 1
+  ELSE 0
+END AS is_online`;
+
 const Friend = {
   async findAll(userId) {
     const { rows } = await query(
@@ -8,7 +14,8 @@ const Friend = {
          f.status,
          f.created_at AS friend_since,
          COALESCE(MAX(s.current_streak), 0) AS top_streak,
-         CASE WHEN f.user_id = $1 THEN 'sent' ELSE 'received' END AS direction
+         CASE WHEN f.user_id = $1 THEN 'sent' ELSE 'received' END AS direction,
+         ${ONLINE_SQL}
        FROM friends f
        JOIN users u ON (
          CASE WHEN f.user_id = $1 THEN f.friend_id ELSE f.user_id END = u.id
@@ -16,14 +23,15 @@ const Friend = {
        LEFT JOIN habits h  ON h.user_id = u.id AND h.archived = false
        LEFT JOIN streaks s ON s.habit_id = h.id
        WHERE f.user_id = $1 OR f.friend_id = $1
-       GROUP BY u.id, u.name, u.email, u.profile_picture, f.status, f.created_at, f.user_id
+       GROUP BY u.id, u.name, u.email, u.profile_picture, u.last_seen,
+                f.status, f.created_at, f.user_id
        ORDER BY f.status, u.name`,
       [userId]
     );
     return rows;
   },
 
-  // Verify two users are actually friends (accepted) before allowing profile view
+  // Verify two users are actually friends (accepted) before allowing profile view or chat
   async areFriends(userAId, userBId) {
     const { rows } = await query(
       `SELECT 1 FROM friends
@@ -34,10 +42,13 @@ const Friend = {
     return rows.length > 0;
   },
 
-  // Get a friend's public profile + habits + streaks
+  // Get a friend's public profile + habits + streaks + online status
   async getFriendProfile(friendId) {
     const { rows: userRows } = await query(
-      `SELECT id, name, email, profile_picture, created_at FROM users WHERE id = $1`,
+      `SELECT
+         id, name, email, profile_picture, created_at,
+         ${ONLINE_SQL}
+       FROM users WHERE id = $1`,
       [friendId]
     );
     if (!userRows[0]) return null;
@@ -71,9 +82,9 @@ const Friend = {
     );
 
     return {
-      user:   userRows[0],
+      user:  userRows[0],
       habits,
-      stats:  statsRows[0],
+      stats: statsRows[0],
     };
   },
 

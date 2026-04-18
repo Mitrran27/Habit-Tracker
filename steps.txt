@@ -1,0 +1,12 @@
+cd habit-tracker/backend
+npm install
+cp .env.example .env        # then open .env and fill in  values
+createdb habittracker       # creates the PostgreSQL database
+node migrations/runner.js up   # runs all 9 migrations
+node seeds/index.js         # loads demo data (optional)
+npm run dev                 # starts API on http://localhost:3001
+
+
+cd habit-tracker/frontend
+npm install
+npm run dev                 # starts app on http://localhost:5173

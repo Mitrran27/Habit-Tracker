@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import logo from '../components/image/logoo habit tracker.png';
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -18,7 +19,20 @@ export default function LoginPage() {
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 24px' }}>
       {/* Logo */}
       <div style={{ textAlign: 'center', marginBottom: 40 }}>
-        <div style={{ fontSize: 56, marginBottom: 12 }}>🎯</div>
+        <div style={{     display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center', marginBottom: 12 }}>
+          <img
+            src={logo}
+            alt="HabitTracker Logo"
+            style={{
+              width: 72,
+              height: 72,
+              objectFit: 'contain',
+              marginBottom: 12
+            }}
+          />
+        </div>
         <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>HabitTracker</div>
         <div style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 6 }}>Build the life you want, one habit at a time.</div>
       </div>
